@@ -59,6 +59,9 @@ export GITHUB_OWNER="cedric-praxiom"
 export GITHUB_REPO="azure-lakehouse-poc"
 # ==========================
 
+SUBSCRIPTION_ID=$(az account show --query id --output tsv)
+az account set --subscription "$SUBSCRIPTION_ID"
+
 az group create -n "$PLATFORM_RG" -l "$LOCATION" -o none
 
 # Create KV (RBAC mode). For CI hosted runners, you can leave public access ON initially.
@@ -129,10 +132,10 @@ Creates an App registration (SPN) **without secrets**, and trusts your **GitHub 
 ```bash
 # ======= Fill these =======
 export DISPLAY_NAME="spn-gha-oidc-poc"
-export SUBSCRIPTION_ID="<sub-guid>"
+export SUBSCRIPTION_ID="$(az keyvault show -n "$KV_NAME" -g "$SUBSCRIPTION_ID" --query id -o tsv)"
 export TENANT_ID="$(az account show --query tenantId -o tsv)"
-export GITHUB_OWNER="<org-or-user>"            # e.g., my-org
-export GITHUB_REPO="<repo>"                    # e.g., azure-lakehouse-blueprint
+export GITHUB_OWNER="$(az keyvault show -n "$KV_NAME" -g "$GITHUB_OWNER" --query id -o tsv)"            # e.g., my-org
+export GITHUB_REPO="$(az keyvault show -n "$KV_NAME" -g "$GITHUB_REPO" --query id -o tsv)"                    # e.g., azure-lakehouse-blueprint
 export GITHUB_REF="refs/heads/main"            # or refs/tags/v1, etc.
 # ==========================
 
