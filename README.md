@@ -91,6 +91,7 @@ Or use the script:
 
 ```bash
 #!/usr/bin/env bash
+#!/usr/bin/env bash
 set -euo pipefail
 export LOCATION="westeurope"
 export PLATFORM_RG="rg-lztbx"
@@ -109,6 +110,8 @@ az group create -n "$PLATFORM_RG" -l "$LOCATION" -o none
 
 # Create KV (RBAC mode). For CI hosted runners, you can leave public access ON initially.
 az keyvault create -n "$KV_NAME" -g "$PLATFORM_RG" -l "$LOCATION" --enable-rbac-authorization true -o none
+
+az keyvault update -n "$KV_NAME" --enable-rbac-authorization true
 
 KV_URI="https://${KV_NAME}.vault.azure.net/"
 
@@ -138,18 +141,21 @@ Creates an App registration (SPN) **without secrets**, and trusts your **GitHub 
 ```bash
 # ======= Fill these =======
 export DISPLAY_NAME="spn-gha-oidc-poc"
-export SUBSCRIPTION_ID="$(az keyvault show -n "$KV_NAME" -g "SUBSCRIPTION-ID" --query id -o tsv)"
+export SUBSCRIPTION_ID="$(az keyvault secret show --vault-name "$KV_NAME" -n "SUBSCRIPTION-ID"  --query value -o tsv)"
 export TENANT_ID="$(az account show --query tenantId -o tsv)"
-export GITHUB_OWNER="$(az keyvault show -n "$KV_NAME" -g "GITHUB-OWNER" --query id -o tsv)"            # e.g., my-org
-export GITHUB_REPO="$(az keyvault show -n "$KV_NAME" -g "GITHUB-REPO" --query id -o tsv)"                    # e.g., azure-lakehouse-blueprint
+export GITHUB_OWNER="$(az keyvault secret show --vault-name "$KV_NAME" -n "GITHUB-OWNER" --query id -o tsv)"            # e.g., my-org
+export GITHUB_REPO="$(az keyvault secret show --vault-name "$KV_NAME" -n "GITHUB-REPO"  --query id -o tsv)"                    # e.g., azure-lakehouse-blueprint
 export GITHUB_REF="refs/heads/main"            # or refs/tags/v1, etc.
-# ==========================
+## ==========================
+
+#az keyvault secret show --name "GITHUB-OWNER" --vault-name "keyvaultname" --query value -o tsv   
 
 az account set --subscription "$SUBSCRIPTION_ID"
 
 # App registration (clientId/appId)
 APP_ID=$(az ad app create --display-name "$DISPLAY_NAME" --sign-in-audience AzureADMyOrg --query appId -o tsv)
-echo "APP_ID=$APP_ID"
+
+
 
 # Service Principal (object used by RBAC)
 SP_OBJECT_ID=$(az ad sp create --id "$APP_ID" --query id -o tsv)
@@ -171,6 +177,9 @@ sed -i.bak "s#<GITHUB_REF>#$GITHUB_REF#g" federated-credential.json
 
 az ad app federated-credential create --id "$APP_OBJECT_ID" --parameters @federated-credential.json
 
+
+
+
 # Grant least-priv on subscription (narrow later to RG if desired)
 SUB_SCOPE="/subscriptions/$SUBSCRIPTION_ID"
 az role assignment create --assignee-object-id "$SP_OBJECT_ID" --assignee-principal-type ServicePrincipal   --role "Contributor" --scope "$SUB_SCOPE" >/dev/null || true
@@ -181,12 +190,10 @@ az role assignment create --assignee-object-id "$SP_OBJECT_ID" --assignee-princi
 SCOPE_KV=$(az keyvault show -n "$KV_NAME" -g "$PLATFORM_RG" --query id -o tsv)
 az role assignment create --assignee-object-id "$SP_OBJECT_ID" --assignee-principal-type ServicePrincipal   --role "Key Vault Secrets User" --scope "$SCOPE_KV" >/dev/null || true
 
-
-
 echo "TENANT_ID=$TENANT_ID"
 echo "APP_ID (Client ID) = $APP_ID"
 
-echo "Set GitHub repo variables: AZURE_TENANT_ID=$TENANT_ID, AZURE_OIDC_CLIENT_ID=$APP_ID, 
+echo "Set GitHub repo variables: AZURE_TENANT_ID=$TENANT_ID, AZURE_OIDC_CLIENT_ID=$APP_ID, KV_URI=$KV_URI"
 
 ```
 
