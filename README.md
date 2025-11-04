@@ -47,19 +47,19 @@ Keep only **Tenant ID**, **Client ID**, and **KV URI** in GitHub (non-secret rep
 Everything else is stored as **Key Vault secrets** and read **after** OIDC login.
 
 ```bash
-# ======= Fill these =======
+#!/usr/bin/env bash
+set -euo pipefail
 export LOCATION="westeurope"
-export PLATFORM_RG="rg-lz-poc"
-export KV_NAME="kv-lz-poc"                     # must be unique in tenant
-export ACR_NAME="acrlzpoc123"                  # globally unique, lowercase
+export PLATFORM_RG="rg-lztbx"
+export KV_NAME="kv-lztbx"                     # must be unique in tenant
+export ACR_NAME="acrlztbx123"                  # globally unique, lowercase
 export RESOURCE_GROUP="$PLATFORM_RG"
 export IMAGE_NAME="redhat-devops"
-export ACI_NAME="tf-runner"
+export ACI_NAME="aci_lztbx-runner"
 export GITHUB_OWNER="cedric-praxiom"
 export GITHUB_REPO="azure-lakehouse-poc"
-# ==========================
+export SUBSCRIPTION_ID=$(az account show --query id --output tsv)
 
-SUBSCRIPTION_ID=$(az account show --query id --output tsv)
 az account set --subscription "$SUBSCRIPTION_ID"
 
 az group create -n "$PLATFORM_RG" -l "$LOCATION" -o none
@@ -69,22 +69,20 @@ az keyvault create -n "$KV_NAME" -g "$PLATFORM_RG" -l "$LOCATION" --enable-rbac-
 
 KV_URI="https://${KV_NAME}.vault.azure.net/"
 
-# Give the SPN read rights on KV secrets
-SCOPE_KV=$(az keyvault show -n "$KV_NAME" -g "$PLATFORM_RG" --query id -o tsv)
-az role assignment create --assignee-object-id "$SP_OBJECT_ID" --assignee-principal-type ServicePrincipal   --role "Key Vault Secrets User" --scope "$SCOPE_KV" >/dev/null || true
-
+ 
 # --- Seed CI settings in KV ---
-az keyvault secret set --vault-name "$KV_NAME" --name "SUBSCRIPTION_ID" --value "$SUBSCRIPTION_ID" >/dev/null
+az keyvault secret set --vault-name "$KV_NAME" --name "SUBSCRIPTION-ID" --value "$SUBSCRIPTION_ID" >/dev/null
+
 az keyvault secret set --vault-name "$KV_NAME" --name "LOCATION"        --value "$LOCATION"        >/dev/null
-az keyvault secret set --vault-name "$KV_NAME" --name "RESOURCE_GROUP"  --value "$RESOURCE_GROUP"  >/dev/null
-az keyvault secret set --vault-name "$KV_NAME" --name "ACR_NAME"        --value "$ACR_NAME"        >/dev/null
-az keyvault secret set --vault-name "$KV_NAME" --name "IMAGE_NAME"      --value "$IMAGE_NAME"      >/dev/null
-az keyvault secret set --vault-name "$KV_NAME" --name "ACI_NAME"        --value "$ACI_NAME"        >/dev/null
-az keyvault secret set --vault-name "$KV_NAME" --name "GITHUB_OWNER"      --value "$GITHUB_OWNER"      >/dev/null
-az keyvault secret set --vault-name "$KV_NAME" --name "GITHUB_REPO"        --value "$GITHUB_REPO"        >/dev/null
+az keyvault secret set --vault-name "$KV_NAME" --name "RESOURCE-GROUP"  --value "$RESOURCE_GROUP"  >/dev/null
+az keyvault secret set --vault-name "$KV_NAME" --name "ACR-NAME"        --value "$ACR_NAME"        >/dev/null
+az keyvault secret set --vault-name "$KV_NAME" --name "IMAGE-NAME"      --value "$IMAGE_NAME"      >/dev/null
+az keyvault secret set --vault-name "$KV_NAME" --name "ACI-NAME"        --value "$ACI_NAME"        >/dev/null
+az keyvault secret set --vault-name "$KV_NAME" --name "GITHUB-OWNER"      --value "$GITHUB_OWNER"      >/dev/null
+az keyvault secret set --vault-name "$KV_NAME" --name "GITHUB-REPO"        --value "$GITHUB_REPO"        >/dev/null
 
 echo "KV_URI=$KV_URI"
-echo "Set GitHub repo variables: AZURE_TENANT_ID=$TENANT_ID, AZURE_OIDC_CLIENT_ID=$APP_ID, KV_URI=$KV_URI"
+echo "Done. KV URI: https://${KV_NAME}.vault.azure.net/"
 ```
 
 Or use the script:
@@ -94,31 +92,39 @@ Or use the script:
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
-: "${PLATFORM_RG:rg_lztbx}"
-: "${KV_NAME:kv_lztbx}"
-: "${SUBSCRIPTION_ID:}"
-: "${LOCATION:westeurope}"
-: "${ACR_NAME:acr_lztbx}"
-: "${RESOURCE_GROUP:rg_lztbx}"
-: "${IMAGE_NAME:=redhat-devops}"
-: "${ACI_NAME:=lztbx-runner}"
-: "${GITHUB_OWNER:cedric-praxiom}"
-: "${GITHUB_REPO:azure-lakehouse-poc}"
+export LOCATION="westeurope"
+export PLATFORM_RG="rg-lztbx"
+export KV_NAME="kv-lztbx"                     # must be unique in tenant
+export ACR_NAME="acrlztbx123"                  # globally unique, lowercase
+export RESOURCE_GROUP="$PLATFORM_RG"
+export IMAGE_NAME="redhat-devops"
+export ACI_NAME="aci_lztbx-runner"
+export GITHUB_OWNER="cedric-praxiom"
+export GITHUB_REPO="azure-lakehouse-poc"
+export SUBSCRIPTION_ID=$(az account show --query id --output tsv)
 
-
-
-SUBSCRIPTION_ID=$(az account show --query id --output tsv)
 az account set --subscription "$SUBSCRIPTION_ID"
 
-echo "Seeding CI settings in KV: $KV_NAME"
-az keyvault secret set --vault-name "$KV_NAME" --name "SUBSCRIPTION_ID" --value "$SUBSCRIPTION_ID" >/dev/null
+az group create -n "$PLATFORM_RG" -l "$LOCATION" -o none
+
+# Create KV (RBAC mode). For CI hosted runners, you can leave public access ON initially.
+az keyvault create -n "$KV_NAME" -g "$PLATFORM_RG" -l "$LOCATION" --enable-rbac-authorization true -o none
+
+KV_URI="https://${KV_NAME}.vault.azure.net/"
+
+ 
+# --- Seed CI settings in KV ---
+az keyvault secret set --vault-name "$KV_NAME" --name "SUBSCRIPTION-ID" --value "$SUBSCRIPTION_ID" >/dev/null
+
 az keyvault secret set --vault-name "$KV_NAME" --name "LOCATION"        --value "$LOCATION"        >/dev/null
-az keyvault secret set --vault-name "$KV_NAME" --name "RESOURCE_GROUP"  --value "$RESOURCE_GROUP"  >/dev/null
-az keyvault secret set --vault-name "$KV_NAME" --name "ACR_NAME"        --value "$ACR_NAME"        >/dev/null
-az keyvault secret set --vault-name "$KV_NAME" --name "IMAGE_NAME"      --value "$IMAGE_NAME"      >/dev/null
-az keyvault secret set --vault-name "$KV_NAME" --name "ACI_NAME"        --value "$ACI_NAME"        >/dev/null
-az keyvault secret set --vault-name "$KV_NAME" --name "GITHUB_OWNER"      --value "$GITHUB_OWNER"      >/dev/null
-az keyvault secret set --vault-name "$KV_NAME" --name "GITHUB_REPO"        --value "$GITHUB_REPO"        >/dev/null
+az keyvault secret set --vault-name "$KV_NAME" --name "RESOURCE-GROUP"  --value "$RESOURCE_GROUP"  >/dev/null
+az keyvault secret set --vault-name "$KV_NAME" --name "ACR-NAME"        --value "$ACR_NAME"        >/dev/null
+az keyvault secret set --vault-name "$KV_NAME" --name "IMAGE-NAME"      --value "$IMAGE_NAME"      >/dev/null
+az keyvault secret set --vault-name "$KV_NAME" --name "ACI-NAME"        --value "$ACI_NAME"        >/dev/null
+az keyvault secret set --vault-name "$KV_NAME" --name "GITHUB-OWNER"      --value "$GITHUB_OWNER"      >/dev/null
+az keyvault secret set --vault-name "$KV_NAME" --name "GITHUB-REPO"        --value "$GITHUB_REPO"        >/dev/null
+
+echo "KV_URI=$KV_URI"
 echo "Done. KV URI: https://${KV_NAME}.vault.azure.net/"
 
 ```
@@ -132,10 +138,10 @@ Creates an App registration (SPN) **without secrets**, and trusts your **GitHub 
 ```bash
 # ======= Fill these =======
 export DISPLAY_NAME="spn-gha-oidc-poc"
-export SUBSCRIPTION_ID="$(az keyvault show -n "$KV_NAME" -g "$SUBSCRIPTION_ID" --query id -o tsv)"
+export SUBSCRIPTION_ID="$(az keyvault show -n "$KV_NAME" -g "SUBSCRIPTION-ID" --query id -o tsv)"
 export TENANT_ID="$(az account show --query tenantId -o tsv)"
-export GITHUB_OWNER="$(az keyvault show -n "$KV_NAME" -g "$GITHUB_OWNER" --query id -o tsv)"            # e.g., my-org
-export GITHUB_REPO="$(az keyvault show -n "$KV_NAME" -g "$GITHUB_REPO" --query id -o tsv)"                    # e.g., azure-lakehouse-blueprint
+export GITHUB_OWNER="$(az keyvault show -n "$KV_NAME" -g "GITHUB-OWNER" --query id -o tsv)"            # e.g., my-org
+export GITHUB_REPO="$(az keyvault show -n "$KV_NAME" -g "GITHUB-REPO" --query id -o tsv)"                    # e.g., azure-lakehouse-blueprint
 export GITHUB_REF="refs/heads/main"            # or refs/tags/v1, etc.
 # ==========================
 
@@ -171,8 +177,17 @@ az role assignment create --assignee-object-id "$SP_OBJECT_ID" --assignee-princi
 # Only if your pipelines will create RBAC assignments:
 az role assignment create --assignee-object-id "$SP_OBJECT_ID" --assignee-principal-type ServicePrincipal   --role "User Access Administrator" --scope "$SUB_SCOPE" >/dev/null || true
 
+# Give the SPN read rights on KV secrets
+SCOPE_KV=$(az keyvault show -n "$KV_NAME" -g "$PLATFORM_RG" --query id -o tsv)
+az role assignment create --assignee-object-id "$SP_OBJECT_ID" --assignee-principal-type ServicePrincipal   --role "Key Vault Secrets User" --scope "$SCOPE_KV" >/dev/null || true
+
+
+
 echo "TENANT_ID=$TENANT_ID"
 echo "APP_ID (Client ID) = $APP_ID"
+
+echo "Set GitHub repo variables: AZURE_TENANT_ID=$TENANT_ID, AZURE_OIDC_CLIENT_ID=$APP_ID, 
+
 ```
 
 **Why**: OIDC avoids long-lived secrets; federated credential scopes trust to your repo/branch.
