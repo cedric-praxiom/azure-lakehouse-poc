@@ -77,6 +77,8 @@ az keyvault secret set --vault-name "$KV_NAME" --name "RESOURCE_GROUP"  --value 
 az keyvault secret set --vault-name "$KV_NAME" --name "ACR_NAME"        --value "$ACR_NAME"        >/dev/null
 az keyvault secret set --vault-name "$KV_NAME" --name "IMAGE_NAME"      --value "$IMAGE_NAME"      >/dev/null
 az keyvault secret set --vault-name "$KV_NAME" --name "ACI_NAME"        --value "$ACI_NAME"        >/dev/null
+az keyvault secret set --vault-name "$KV_NAME" --name "GITHUB_OWNER"      --value "$GITHUB_OWNER"      >/dev/null
+az keyvault secret set --vault-name "$KV_NAME" --name "GITHUB_REPO"        --value "$GITHUB_REPO"        >/dev/null
 
 echo "KV_URI=$KV_URI"
 echo "Set GitHub repo variables: AZURE_TENANT_ID=$TENANT_ID, AZURE_OIDC_CLIENT_ID=$APP_ID, KV_URI=$KV_URI"
@@ -106,14 +108,14 @@ SUBSCRIPTION_ID=$(az account show --query id --output tsv)
 az account set --subscription "$SUBSCRIPTION_ID"
 
 echo "Seeding CI settings in KV: $KV_NAME"
-az keyvault secret set --vault-name "$KV_NAME" --name "GITHUB_OWNER" --value "$GITHUB_OWNER" >/dev/null
-az keyvault secret set --vault-name "$KV_NAME" --name "GITHUB_REPO"  --value "$GITHUB_REPO"  >/dev/null
 az keyvault secret set --vault-name "$KV_NAME" --name "SUBSCRIPTION_ID" --value "$SUBSCRIPTION_ID" >/dev/null
 az keyvault secret set --vault-name "$KV_NAME" --name "LOCATION"        --value "$LOCATION"        >/dev/null
 az keyvault secret set --vault-name "$KV_NAME" --name "RESOURCE_GROUP"  --value "$RESOURCE_GROUP"  >/dev/null
 az keyvault secret set --vault-name "$KV_NAME" --name "ACR_NAME"        --value "$ACR_NAME"        >/dev/null
-az keyvault secret set --vault-name "$KV_NAME" --name "IMAGE_NAME"      --value "$IMAGE_NAME"      >/devnull 
+az keyvault secret set --vault-name "$KV_NAME" --name "IMAGE_NAME"      --value "$IMAGE_NAME"      >/dev/null
 az keyvault secret set --vault-name "$KV_NAME" --name "ACI_NAME"        --value "$ACI_NAME"        >/dev/null
+az keyvault secret set --vault-name "$KV_NAME" --name "GITHUB_OWNER"      --value "$GITHUB_OWNER"      >/dev/null
+az keyvault secret set --vault-name "$KV_NAME" --name "GITHUB_REPO"        --value "$GITHUB_REPO"        >/dev/null
 echo "Done. KV URI: https://${KV_NAME}.vault.azure.net/"
 
 ```
