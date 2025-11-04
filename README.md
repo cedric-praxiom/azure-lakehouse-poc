@@ -13,6 +13,68 @@ This single Markdown contains **everything** you need:
 > Copy blocks as-is, or use the accompanying ZIP you may have downloaded.
 
 ---
+## diagram
+
+              ┌────────────────────────────────────────────────────┐
+              │                    GitHub Repo                     │
+              │ (IaC + CI/CD workflows + Dockerfile + scripts)     │
+              └───────────────┬────────────────────────────────────┘
+                              │  OIDC (Federated Credential)
+                              ▼
+                   ┌────────────────────────────────────┐
+                   │  Azure Entra ID (AAD)              │
+                   │  App Registration                  │
+                   │  ↳ Service Principal               │
+                   │  ↳ Federated Cred. (OIDC→GitHub)   │
+                   └────────────────────────────────────┘
+                               │ issues JWT token
+                               ▼
+                ┌────────────────────────────────────────┐
+                │ GitHub Actions Workflow                │
+                │  1. Auth via OIDC (no secret)          │
+                │  2. Read repo vars (KV reference)      │
+                │  3. Build Docker (UBI9)                │
+                │  4. Push image to ACR                  │
+                │  5. Create ACI runner                  │
+                └─────────────────┬──────────────────────┘
+                                  │
+                                  ▼
+          ┌───────────────────────────────────────────────────────────┐
+          │ Azure Container Registry (ACR)                            │
+          │  ↳ Stores built DevOps toolchain image                    │
+          └───────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+          ┌───────────────────────────────────────────────────────────┐
+          │ Azure Container Instance (ACI Runner)                     │
+          │  ↳ Runs Terraform using KV vars                           │
+          │  ↳ Authenticates via Managed Identity                     │
+          └───────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+    ┌────────────────────────────────────────────────────────────────────────┐
+    │ Terraform Landing Zone                                                 │
+    │  - Resource Group / VNet / Subnets                                     │
+    │  - Key Vault (stores secrets & tfstate backend config)                 │
+    │  - Storage Account (ADLS Gen2: bronze/silver/gold)                     │
+    │  - Databricks Workspace (VNet-injected)                                │
+    │  - Azure Data Factory (Managed VNet)                                   │
+    │  - Private Endpoints + Private DNS zones                               │
+    └────────────────────────────────────────────────────────────────────────┘
+
+
+| Layer               | Component                                     | Purpose                                                  |
+| ------------------- | --------------------------------------------- | -------------------------------------------------------- |
+| **Identity & Auth** | Entra ID App (Service Principal)              | OIDC trust with GitHub; least privilege RBAC             |
+| **Secrets**         | Azure Key Vault                               | Centralizes secrets & Terraform backend config           |
+| **CI/CD**           | GitHub Actions                                | Builds/pushes Docker image; triggers Terraform           |
+| **Container Infra** | ACR + ACI                                     | Stores and executes DevOps toolchain                     |
+| **Toolchain**       | UBI9 + Terraform + Azure CLI + Databricks CLI | Provides consistent environment for IaC execution        |
+| **IaC (Infra)**     | Terraform Modules                             | Creates landing zone: ADLS, Databricks, ADF, KV, PE, DNS |
+| **Networking**      | Private Link + Private DNS                    | Enforces isolation & internal-only communication         |
+
+
+
 
 ## 0) Repository layout
 
