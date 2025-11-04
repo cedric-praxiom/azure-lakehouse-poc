@@ -1,0 +1,88 @@
+name: build-push-create-aci (KV-driven)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AZURE_TENANT_ID:      ${{ vars.AZURE_TENANT_ID }}
+  AZURE_OIDC_CLIENT_ID: ${{ vars.AZURE_OIDC_CLIENT_ID }}
+  KV_URI:               ${{ vars.KV_URI }}  # https://<kv>.vault.azure.net/
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    # 1) Secretless OIDC login: requires tenant + client-id only
+    - name: Azure login (OIDC)
+      uses: azure/login@v2
+      with:
+        client-id:  ${{ env.AZURE_OIDC_CLIENT_ID }}
+        tenant-id:  ${{ env.AZURE_TENANT_ID }}
+
+    # 2) Pull pipeline settings from Key Vault (data-plane)
+    - name: Read pipeline config from Key Vault
+      run: |
+        set -e
+        kv="${{ env.KV_URI }}"
+        kv="${kv%/}"
+        get() { az keyvault secret show --id "$kv/secrets/$1" --query value -o tsv; }
+        echo "SUBSCRIPTION_ID=$(get SUBSCRIPTION_ID)"       >> $GITHUB_ENV
+        echo "LOCATION=$(get LOCATION)"                     >> $GITHUB_ENV
+        echo "RESOURCE_GROUP=$(get RESOURCE_GROUP)"         >> $GITHUB_ENV
+        echo "ACR_NAME=$(get ACR_NAME)"                     >> $GITHUB_ENV
+        echo "IMAGE_NAME=$(get IMAGE_NAME)"                 >> $GITHUB_ENV
+        echo "ACI_NAME=$(get ACI_NAME)"                     >> $GITHUB_ENV
+
+    # 3) Select subscription (now that we know it)
+    - name: Select subscription
+      run: az account set --subscription "$SUBSCRIPTION_ID"
+
+    # 4) Ensure RG + ACR
+    - name: Ensure Resource Group
+      run: az group create -n "$RESOURCE_GROUP" -l "$LOCATION" -o none
+
+    - name: Ensure ACR
+      run: |
+        if ! az acr show -n "$ACR_NAME" -g "$RESOURCE_GROUP" >/dev/null 2>&1; then
+          az acr create -n "$ACR_NAME" -g "$RESOURCE_GROUP" -l "$LOCATION" --sku Standard -o none
+        fi
+        echo "ACR_LOGIN_SERVER=$(az acr show -n "$ACR_NAME" -g "$RESOURCE_GROUP" --query loginServer -o tsv)" >> $GITHUB_ENV
+
+    # 5) Build & push tooling image (linux/amd64)
+    - name: Build & push
+      run: |
+        az acr login --name "$ACR_NAME"
+        docker buildx create --use
+        docker buildx build --platform linux/amd64           -t "$ACR_LOGIN_SERVER/$IMAGE_NAME:latest"           -t "$ACR_LOGIN_SERVER/$IMAGE_NAME:${{ github.sha }}"           ./docker --push
+
+    # 6) Ensure UAMI + ACI runner
+    - name: Ensure UAMI
+      run: |
+        UAMI_NAME="uami-tf-runner"
+        az identity show -g "$RESOURCE_GROUP" -n "$UAMI_NAME" >/dev/null 2>&1 ||           az identity create -g "$RESOURCE_GROUP" -n "$UAMI_NAME" -l "$LOCATION" -o none
+        echo "UAMI_ID=$(az identity show -g $RESOURCE_GROUP -n $UAMI_NAME --query id -o tsv)" >> $GITHUB_ENV
+        echo "UAMI_PRIN=$(az identity show -g $RESOURCE_GROUP -n $UAMI_NAME --query principalId -o tsv)" >> $GITHUB_ENV
+
+    - name: Grant roles to UAMI (Contributor; add UAA only if needed)
+      run: |
+        SUB="/subscriptions/$SUBSCRIPTION_ID"
+        az role assignment create --assignee-object-id "$UAMI_PRIN"           --assignee-principal-type ServicePrincipal           --role "Contributor" --scope "$SUB" >/dev/null || true
+
+    - name: Create/Refresh ACI runner (ephemeral)
+      run: |
+        az container show -g "$RESOURCE_GROUP" -n "$ACI_NAME" >/dev/null 2>&1 &&           az container delete -g "$RESOURCE_GROUP" -n "$ACI_NAME" --yes -o none
+        az container create -g "$RESOURCE_GROUP" -n "$ACI_NAME"           --image "$ACR_LOGIN_SERVER/$IMAGE_NAME:latest"           --registry-login-server "$ACR_LOGIN_SERVER"           --assign-identity "$UAMI_ID"           --cpu 2 --memory 4           --restart-policy Never           --os-type Linux           --command-line "/bin/bash"           -l "$LOCATION" -o none
+
+    - name: How to connect
+      run: |
+        echo "Attach shell:"
+        echo "  az container exec -g $RESOURCE_GROUP -n $ACI_NAME --exec-command "/bin/bash""
+        echo "Inside ACI, run:"
+        echo "  az login --identity && az account show"
+        echo "  cd /work/terraform && terraform init -backend-config=backend.hcl && terraform plan"
