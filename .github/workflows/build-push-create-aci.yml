@@ -3,6 +3,8 @@ name: build-push-create-aci (KV-driven)
 on:
   workflow_dispatch:
 
+    
+
 permissions:
   id-token: write
   contents: read
@@ -26,7 +28,10 @@ jobs:
         client-id:  ${{ env.AZURE_OIDC_CLIENT_ID }}
         tenant-id:  ${{ env.AZURE_TENANT_ID }}
         subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-        allow-no-subscriptions: false
+
+    - name: Check connection
+      run: az account show
+
 
     # 2) Pull pipeline settings from Key Vault (data-plane)
     - name: Read pipeline config from Key Vault
