@@ -358,7 +358,7 @@ jobs:
     - name: Create/Refresh ACI runner (ephemeral)
       run: |
         az container show -g "$RESOURCE_GROUP" -n "$ACI_NAME" >/dev/null 2>&1 &&           az container delete -g "$RESOURCE_GROUP" -n "$ACI_NAME" --yes -o none
-        az container create -g "$RESOURCE_GROUP" -n "$ACI_NAME"           --image "$ACR_LOGIN_SERVER/$IMAGE_NAME:latest"           --registry-login-server "$ACR_LOGIN_SERVER"           --assign-identity "$UAMI_ID"           --cpu 2 --memory 4           --restart-policy Never           --os-type Linux           --command-line "/bin/bash"           -l "$LOCATION" -o none
+        az container create -g "$RESOURCE_GROUP" -n "$ACI_NAME"           --image "$ACR_LOGIN_SERVER/$IMAGE_NAME:latest"           --registry-login-server "$ACR_LOGIN_SERVER"           --assign-identity "$UAMI_ID"           --cpu 2 --memory 4           --restart-policy Never           --os-type Linux           --command-line "/bin/bash"           -l "$LOCATION" -o none --registry-login-server "$ACR_LOGIN_SERVER"
 
     - name: How to connect
       run: |
