@@ -117,7 +117,7 @@ export KV_NAME="kv-lztbx"                     # must be unique in tenant
 export ACR_NAME="acrlztbx123"                  # globally unique, lowercase
 export RESOURCE_GROUP="$PLATFORM_RG"
 export IMAGE_NAME="redhat-devops"
-export ACI_NAME="aci_lztbx-runner"
+export ACI_NAME="aci-lztbx-runner"
 export GITHUB_OWNER="cedric-praxiom"
 export GITHUB_REPO="azure-lakehouse-poc"
 export SUBSCRIPTION_ID=$(az account show --query id --output tsv)
@@ -129,7 +129,9 @@ az group create -n "$PLATFORM_RG" -l "$LOCATION" -o none
 # Create KV (RBAC mode). For CI hosted runners, you can leave public access ON initially.
 az keyvault create -n "$KV_NAME" -g "$PLATFORM_RG" -l "$LOCATION" --enable-rbac-authorization true -o none
 
-KV_URI="https://${KV_NAME}.vault.azure.net/"
+az keyvault update -n "$KV_NAME" --enable-rbac-authorization true
+
+export KV_URI="https://${KV_NAME}.vault.azure.net/"
 
  
 # --- Seed CI settings in KV ---
@@ -145,6 +147,7 @@ az keyvault secret set --vault-name "$KV_NAME" --name "GITHUB-REPO"        --val
 
 echo "KV_URI=$KV_URI"
 echo "Done. KV URI: https://${KV_NAME}.vault.azure.net/"
+
 ```
 
 Or use the script:
@@ -355,22 +358,27 @@ jobs:
       run: |
         UAMI_NAME="uami-tf-runner"
         az identity show -g "$RESOURCE_GROUP" -n "$UAMI_NAME" >/dev/null 2>&1 ||           az identity create -g "$RESOURCE_GROUP" -n "$UAMI_NAME" -l "$LOCATION" -o none
-    
         echo "UAMI_ID=$(az identity show -g $RESOURCE_GROUP -n $UAMI_NAME --query id -o tsv)" >> $GITHUB_ENV
-        echo $UAMI_ID
         echo "UAMI_PRIN=$(az identity show -g $RESOURCE_GROUP -n $UAMI_NAME --query principalId -o tsv)" >> $GITHUB_ENV
-        echo $UAMI_PRIN
+        echo "SUB=/subscriptions/$SUBSCRIPTION_ID" >> $GITHUB_ENV
+        echo "SCOPE_ACR=/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.ContainerRegistry/registries/$ACR_NAME"  >> $GITHUB_ENV
+       
 
     - name: Grant roles to UAMI (Contributor, AcrPull
       run: |
-        SUB="/subscriptions/$SUBSCRIPTION_ID"
-        az role assignment create --assignee-object-id "$UAMI_PRIN"           --assignee-principal-type ServicePrincipal           --role "Contributor" --scope "$SUB" >/dev/null || true
-        az role assignment create --assignee-object-id "$UAMI_PRIN"           --assignee-principal-type ServicePrincipal           --role "AcrPull" --scope "$SUB" >/dev/null || true
-
+         az role assignment create --assignee-object-id "$UAMI_PRIN"  --assignee-principal-type ServicePrincipal  --role "Contributor" --scope "$SUB" >/dev/null || true
+         az role assignment create --assignee-object-id "$UAMI_PRIN"  --assignee-principal-type ServicePrincipal  --role "AcrPull" --scope "$SCOPE_ACR" 
+        
     - name: Create/Refresh ACI runner (ephemeral)
       run: |
+        
+        az role assignment create         --assignee-object-id "$UAMI_PRIN"         --assignee-principal-type ServicePrincipal         --role "AcrPull"         --scope "$SCOPE_ACR" >/dev/null || true
+
+        
         az container show -g "$RESOURCE_GROUP" -n "$ACI_NAME" >/dev/null 2>&1 &&           az container delete -g "$RESOURCE_GROUP" -n "$ACI_NAME" --yes -o none
-        az container create -g "$RESOURCE_GROUP" -n "$ACI_NAME"           --image "$ACR_LOGIN_SERVER/$IMAGE_NAME:latest"            --assign-identity "$UAMI_ID"           --cpu 2 --memory 4           --restart-policy Never           --os-type Linux           --command-line "/bin/bash"           -l "$LOCATION" -o none 
+        
+        
+        az container create -g "$RESOURCE_GROUP" -n "$ACI_NAME"    --acr-identity "$UAMI_ID"       --image "$ACR_LOGIN_SERVER/$IMAGE_NAME:latest"            --assign-identity "$UAMI_ID"           --cpu 2 --memory 4           --restart-policy Never           --os-type Linux           --command-line "/bin/bash"           -l "$LOCATION" -o none 
 
     - name: How to connect
       run: |
