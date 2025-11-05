@@ -83,16 +83,13 @@ jobs:
     - name: Grant roles to UAMI (Contributor, AcrPull
       run: |
          az role assignment create --assignee-object-id "$UAMI_PRIN"  --assignee-principal-type ServicePrincipal  --role "Contributor" --scope "$SUB" >/dev/null || true
-         az role assignment create --assignee-object-id "$UAMI_PRIN"  --assignee-principal-type ServicePrincipal  --role "AcrPull" --scope "$SCOPE_ACR" >/dev/null || true
+         az role assignment create --assignee-object-id "$UAMI_PRIN"  --assignee-principal-type ServicePrincipal  --role "AcrPull" --scope "$SCOPE_ACR" v
         
     - name: Create/Refresh ACI runner (ephemeral)
       run: |
         
-        az role assignment create \
-        --assignee-object-id "$UAMI_PRIN" \
-        --assignee-principal-type ServicePrincipal \
-        --role "AcrPull" \
-        --scope "$SCOPE_ACR"
+        az role assignment create         --assignee-object-id "$UAMI_PRIN"         --assignee-principal-type ServicePrincipal         --role "AcrPull"         --scope "$SCOPE_ACR" >/dev/null || true
+
         
         az container show -g "$RESOURCE_GROUP" -n "$ACI_NAME" >/dev/null 2>&1 &&           az container delete -g "$RESOURCE_GROUP" -n "$ACI_NAME" --yes -o none
         
