@@ -2,8 +2,8 @@
 export DISPLAY_NAME="spn-gha-oidc-poc"
 export SUBSCRIPTION_ID="$(az keyvault secret show --vault-name "$KV_NAME" -n "SUBSCRIPTION-ID"  --query value -o tsv)"
 export TENANT_ID="$(az account show --query tenantId -o tsv)"
-export GITHUB_OWNER="$(az keyvault secret show --vault-name "$KV_NAME" -n "GITHUB-OWNER" --query id -o tsv)"            # e.g., my-org
-export GITHUB_REPO="$(az keyvault secret show --vault-name "$KV_NAME" -n "GITHUB-REPO"  --query id -o tsv)"                    # e.g., azure-lakehouse-blueprint
+export GITHUB_OWNER="$(az keyvault secret show --vault-name "$KV_NAME" -n "GITHUB-OWNER" --query value -o tsv)"            # e.g., my-org
+export GITHUB_REPO="$(az keyvault secret show --vault-name "$KV_NAME" -n "GITHUB-REPO"  --query value -o tsv)"                    # e.g., azure-lakehouse-blueprint
 export GITHUB_REF="refs/heads/main"            # or refs/tags/v1, etc.
 ## ==========================
 
