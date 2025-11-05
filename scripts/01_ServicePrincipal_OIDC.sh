@@ -1,19 +1,19 @@
 # ======= Fill these =======
 export LOCATION="westeurope"
 export PLATFORM_RG="rg-lztbx"
-export KV_NAME="kv-lztbx"                     # must be unique in tenant
-export ACR_NAME="acrlztbx123"                  # globally unique, lowercase
+export KV_NAME="kv-lztbx"       
+export KV_URI="https://${KV_NAME}.vault.azure.net/"            
+export ACR_NAME="acrlztbx123"                
 export RESOURCE_GROUP="$PLATFORM_RG"
 export IMAGE_NAME="redhat-devops"
 export ACI_NAME="aci_lztbx-runner"
 export GITHUB_OWNER="cedric-praxiom"
-export GITHUB_REPO="azure-lakehouse-poc"export DISPLAY_NAME="spn-gha-oidc-poc"
-
+export GITHUB_REPO="azure-lakehouse-poc"export DISPLAY_NAME="spn-gha-oidc-poc"d
 export SUBSCRIPTION_ID="$(az keyvault secret show --vault-name "$KV_NAME" -n "SUBSCRIPTION-ID"  --query value -o tsv)"
 export TENANT_ID="$(az account show --query tenantId -o tsv)"
-export GITHUB_OWNER="$(az keyvault secret show --vault-name "$KV_NAME" -n "GITHUB-OWNER" --query value -o tsv)"            # e.g., my-org
-export GITHUB_REPO="$(az keyvault secret show --vault-name "$KV_NAME" -n "GITHUB-REPO"  --query value -o tsv)"                    # e.g., azure-lakehouse-blueprint
-export GITHUB_REF="refs/heads/main"            # or refs/tags/v1, etc.
+export GITHUB_OWNER="$(az keyvault secret show --vault-name "$KV_NAME" -n "GITHUB-OWNER" --query value -o tsv)"         
+export GITHUB_REPO="$(az keyvault secret show --vault-name "$KV_NAME" -n "GITHUB-REPO"  --query value -o tsv)"               
+export GITHUB_REF="refs/heads/main"      
 ## ==========================
 
 #az keyvault secret show --name "GITHUB-OWNER" --vault-name "keyvaultname" --query value -o tsv   
@@ -58,7 +58,9 @@ az role assignment create --assignee-object-id "$SP_OBJECT_ID" --assignee-princi
 SCOPE_KV=$(az keyvault show -n "$KV_NAME" -g "$PLATFORM_RG" --query id -o tsv)
 az role assignment create --assignee-object-id "$SP_OBJECT_ID" --assignee-principal-type ServicePrincipal   --role "Key Vault Secrets User" --scope "$SCOPE_KV" >/dev/null || true
 
-echo "TENANT_ID=$TENANT_ID"
+az role assignment create --assignee-object-id "$SP_OBJECT_ID" --assignee-principal-type ServicePrincipal   --role "AcrPull" --scope "$SCOPE_KV" >/dev/null || true
+
+  echo "TENANT_ID=$TENANT_ID"
 echo "APP_ID (Client ID) = $APP_ID"
 
 echo "Set GitHub repo variables: AZURE_TENANT_ID=$TENANT_ID, AZURE_OIDC_CLIENT_ID=$APP_ID, KV_URI=$KV_URI"

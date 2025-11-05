@@ -313,12 +313,12 @@ jobs:
         kv="${{ env.KV_URI }}"
         kv="${kv%/}"
         get() { az keyvault secret show --id "$kv/secrets/$1" --query value -o tsv; }
-        echo "SUBSCRIPTION_ID=$(get SUBSCRIPTION_ID)"       >> $GITHUB_ENV
+        echo "SUBSCRIPTION_ID=$(get SUBSCRIPTION-ID)"       >> $GITHUB_ENV
         echo "LOCATION=$(get LOCATION)"                     >> $GITHUB_ENV
-        echo "RESOURCE_GROUP=$(get RESOURCE_GROUP)"         >> $GITHUB_ENV
-        echo "ACR_NAME=$(get ACR_NAME)"                     >> $GITHUB_ENV
-        echo "IMAGE_NAME=$(get IMAGE_NAME)"                 >> $GITHUB_ENV
-        echo "ACI_NAME=$(get ACI_NAME)"                     >> $GITHUB_ENV
+        echo "RESOURCE_GROUP=$(get RESOURCE-GROUP)"         >> $GITHUB_ENV
+        echo "ACR_NAME=$(get ACR-NAME)"                     >> $GITHUB_ENV
+        echo "IMAGE_NAME=$(get IMAGE-NAME)"                 >> $GITHUB_ENV
+        echo "ACI_NAME=$(get ACI-NAME)"                     >> $GITHUB_ENV
 
     # 3) Select subscription (now that we know it)
     - name: Select subscription
