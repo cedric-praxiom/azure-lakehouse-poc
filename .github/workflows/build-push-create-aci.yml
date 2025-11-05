@@ -82,12 +82,21 @@ jobs:
 
     - name: Grant roles to UAMI (Contributor, AcrPull
       run: |
-         az role assignment create --assignee-object-id "$UAMI_PRIN"  --assignee-principal-type ServicePrincipal           --role "Contributor" --scope "$SUB" >/dev/null || true
+         az role assignment create --assignee-object-id "$UAMI_PRIN"  --assignee-principal-type ServicePrincipal  --role "Contributor" --scope "$SUB" >/dev/null || true
          az role assignment create --assignee-object-id "$UAMI_PRIN"  --assignee-principal-type ServicePrincipal  --role "AcrPull" --scope "$SCOPE_ACR" >/dev/null || true
         
     - name: Create/Refresh ACI runner (ephemeral)
       run: |
+        
+        az role assignment create \
+        --assignee-object-id "$UAMI_PRIN" \
+        --assignee-principal-type ServicePrincipal \
+        --role "AcrPull" \
+        --scope "$SCOPE_ACR"
+        
         az container show -g "$RESOURCE_GROUP" -n "$ACI_NAME" >/dev/null 2>&1 &&           az container delete -g "$RESOURCE_GROUP" -n "$ACI_NAME" --yes -o none
+        
+        
         az container create -g "$RESOURCE_GROUP" -n "$ACI_NAME"           --image "$ACR_LOGIN_SERVER/$IMAGE_NAME:latest"            --assign-identity "$UAMI_ID"           --cpu 2 --memory 4           --restart-policy Never           --os-type Linux           --command-line "/bin/bash"           -l "$LOCATION" -o none 
 
     - name: How to connect
