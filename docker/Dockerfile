@@ -1,6 +1,10 @@
 FROM registry.access.redhat.com/ubi9/ubi:latest
 
-RUN dnf -y update && dnf -y install     curl unzip tar gzip git jq python3 python3-pip     libicu ca-certificates procps-ng which iputils     && dnf clean all
+RUN dnf -y update --allowerasing && \
+    dnf -y install --allowerasing \
+        unzip tar gzip git jq python3 python3-pip \
+        libicu ca-certificates procps-ng which iputils curl && \
+    dnf clean all
 
 # Azure CLI
 RUN rpm --import https://packages.microsoft.com/keys/microsoft.asc &&     curl -sL https://packages.microsoft.com/config/rhel/9/prod.repo -o /etc/yum.repos.d/microsoft-prod.repo &&     dnf -y install azure-cli && dnf clean all
