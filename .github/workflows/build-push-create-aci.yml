@@ -94,7 +94,7 @@ jobs:
         az container show -g "$RESOURCE_GROUP" -n "$ACI_NAME" >/dev/null 2>&1 &&           az container delete -g "$RESOURCE_GROUP" -n "$ACI_NAME" --yes -o none
         
         
-        az container create -g "$RESOURCE_GROUP" -n "$ACI_NAME"           --image "$ACR_LOGIN_SERVER/$IMAGE_NAME:latest"            --assign-identity "$UAMI_ID"           --cpu 2 --memory 4           --restart-policy Never           --os-type Linux           --command-line "/bin/bash"           -l "$LOCATION" -o none 
+        az container create -g "$RESOURCE_GROUP" -n "$ACI_NAME"    --acr-identity "$UAMI_ID"       --image "$ACR_LOGIN_SERVER/$IMAGE_NAME:latest"            --assign-identity "$UAMI_ID"           --cpu 2 --memory 4           --restart-policy Never           --os-type Linux           --command-line "/bin/bash"           -l "$LOCATION" -o none 
 
     - name: How to connect
       run: |
