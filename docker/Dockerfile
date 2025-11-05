@@ -16,6 +16,10 @@ RUN dnf -y install dnf-plugins-core &&     dnf config-manager --add-repo https:/
 RUN pip3 install --no-cache-dir databricks azure-identity
 
 WORKDIR /work
+WORKDIR /work/terraform
+COPY terraform/ /work/terraform/
+
+
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
