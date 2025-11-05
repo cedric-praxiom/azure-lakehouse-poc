@@ -17,7 +17,7 @@ RUN pip3 install --no-cache-dir databricks azure-identity
 
 WORKDIR /work
 WORKDIR /work/terraform
-COPY terraform/ /work/terraform/
+COPY ../terraform/ /work/terraform/
 
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
