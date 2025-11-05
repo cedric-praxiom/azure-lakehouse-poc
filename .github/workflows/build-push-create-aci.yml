@@ -12,7 +12,7 @@ env:
   AZURE_OIDC_CLIENT_ID: ${{ vars.AZURE_OIDC_CLIENT_ID }}
   KV_URI:               ${{ vars.KV_URI }}  # https://<kv>.vault.azure.net/
   AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-  
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,7 +23,6 @@ jobs:
     - name: Azure login (OIDC)
       uses: azure/login@v2
       with:
-        auth-type: 'OIDC'
         client-id:  ${{ env.AZURE_OIDC_CLIENT_ID }}
         tenant-id:  ${{ env.AZURE_TENANT_ID }}
         subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
