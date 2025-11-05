@@ -13,7 +13,7 @@ env:
   AZURE_TENANT_ID:      ${{ vars.AZURE_TENANT_ID }}
   AZURE_OIDC_CLIENT_ID: ${{ vars.AZURE_OIDC_CLIENT_ID }}
   KV_URI:               ${{ vars.KV_URI }}  # https://<kv>.vault.azure.net/
-  AZURE_SUBSCRIPTION_ID: 9956b38d-249f-4649-a308-7250d3eee3d3
+  AZURE_SUBSCRIPTION_ID:  ${{ vars.AZURE_SUBSCRIPTION_ID }} 
 
 jobs:
   build:
@@ -40,12 +40,12 @@ jobs:
         kv="${{ env.KV_URI }}"
         kv="${kv%/}"
         get() { az keyvault secret show --id "$kv/secrets/$1" --query value -o tsv; }
-        echo "SUBSCRIPTION_ID=$(get SUBSCRIPTION_ID)"       >> $GITHUB_ENV
+        echo "SUBSCRIPTION_ID=$(get SUBSCRIPTION-ID)"       >> $GITHUB_ENV
         echo "LOCATION=$(get LOCATION)"                     >> $GITHUB_ENV
-        echo "RESOURCE_GROUP=$(get RESOURCE_GROUP)"         >> $GITHUB_ENV
-        echo "ACR_NAME=$(get ACR_NAME)"                     >> $GITHUB_ENV
-        echo "IMAGE_NAME=$(get IMAGE_NAME)"                 >> $GITHUB_ENV
-        echo "ACI_NAME=$(get ACI_NAME)"                     >> $GITHUB_ENV
+        echo "RESOURCE_GROUP=$(get RESOURCE-GROUP)"         >> $GITHUB_ENV
+        echo "ACR_NAME=$(get ACR-NAME)"                     >> $GITHUB_ENV
+        echo "IMAGE_NAME=$(get IMAGE-NAME)"                 >> $GITHUB_ENV
+        echo "ACI_NAME=$(get ACI-NAME)"                     >> $GITHUB_ENV
 
     # 3) Select subscription (now that we know it)
     - name: Select subscription

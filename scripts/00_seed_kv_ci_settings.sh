@@ -20,7 +20,7 @@ az keyvault create -n "$KV_NAME" -g "$PLATFORM_RG" -l "$LOCATION" --enable-rbac-
 
 az keyvault update -n "$KV_NAME" --enable-rbac-authorization true
 
-KV_URI="https://${KV_NAME}.vault.azure.net/"
+export KV_URI="https://${KV_NAME}.vault.azure.net/"
 
  
 # --- Seed CI settings in KV ---

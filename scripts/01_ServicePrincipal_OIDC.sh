@@ -1,5 +1,14 @@
 # ======= Fill these =======
-export DISPLAY_NAME="spn-gha-oidc-poc"
+export LOCATION="westeurope"
+export PLATFORM_RG="rg-lztbx"
+export KV_NAME="kv-lztbx"                     # must be unique in tenant
+export ACR_NAME="acrlztbx123"                  # globally unique, lowercase
+export RESOURCE_GROUP="$PLATFORM_RG"
+export IMAGE_NAME="redhat-devops"
+export ACI_NAME="aci_lztbx-runner"
+export GITHUB_OWNER="cedric-praxiom"
+export GITHUB_REPO="azure-lakehouse-poc"export DISPLAY_NAME="spn-gha-oidc-poc"
+
 export SUBSCRIPTION_ID="$(az keyvault secret show --vault-name "$KV_NAME" -n "SUBSCRIPTION-ID"  --query value -o tsv)"
 export TENANT_ID="$(az account show --query tenantId -o tsv)"
 export GITHUB_OWNER="$(az keyvault secret show --vault-name "$KV_NAME" -n "GITHUB-OWNER" --query value -o tsv)"            # e.g., my-org
