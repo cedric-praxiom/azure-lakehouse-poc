@@ -284,6 +284,8 @@ name: build-push-create-aci (KV-driven)
 on:
   workflow_dispatch:
 
+    
+
 permissions:
   id-token: write
   contents: read
@@ -292,6 +294,7 @@ env:
   AZURE_TENANT_ID:      ${{ vars.AZURE_TENANT_ID }}
   AZURE_OIDC_CLIENT_ID: ${{ vars.AZURE_OIDC_CLIENT_ID }}
   KV_URI:               ${{ vars.KV_URI }}  # https://<kv>.vault.azure.net/
+  AZURE_SUBSCRIPTION_ID:  ${{ vars.AZURE_SUBSCRIPTION_ID }} 
 
 jobs:
   build:
@@ -305,6 +308,11 @@ jobs:
       with:
         client-id:  ${{ env.AZURE_OIDC_CLIENT_ID }}
         tenant-id:  ${{ env.AZURE_TENANT_ID }}
+        subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Check connection
+      run: az account show
+
 
     # 2) Pull pipeline settings from Key Vault (data-plane)
     - name: Read pipeline config from Key Vault
@@ -319,7 +327,7 @@ jobs:
         echo "ACR_NAME=$(get ACR-NAME)"                     >> $GITHUB_ENV
         echo "IMAGE_NAME=$(get IMAGE-NAME)"                 >> $GITHUB_ENV
         echo "ACI_NAME=$(get ACI-NAME)"                     >> $GITHUB_ENV
-
+ 
     # 3) Select subscription (now that we know it)
     - name: Select subscription
       run: az account set --subscription "$SUBSCRIPTION_ID"
@@ -347,18 +355,22 @@ jobs:
       run: |
         UAMI_NAME="uami-tf-runner"
         az identity show -g "$RESOURCE_GROUP" -n "$UAMI_NAME" >/dev/null 2>&1 ||           az identity create -g "$RESOURCE_GROUP" -n "$UAMI_NAME" -l "$LOCATION" -o none
+    
         echo "UAMI_ID=$(az identity show -g $RESOURCE_GROUP -n $UAMI_NAME --query id -o tsv)" >> $GITHUB_ENV
+        echo $UAMI_ID
         echo "UAMI_PRIN=$(az identity show -g $RESOURCE_GROUP -n $UAMI_NAME --query principalId -o tsv)" >> $GITHUB_ENV
+        echo $UAMI_PRIN
 
-    - name: Grant roles to UAMI (Contributor; add UAA only if needed)
+    - name: Grant roles to UAMI (Contributor, AcrPull
       run: |
         SUB="/subscriptions/$SUBSCRIPTION_ID"
         az role assignment create --assignee-object-id "$UAMI_PRIN"           --assignee-principal-type ServicePrincipal           --role "Contributor" --scope "$SUB" >/dev/null || true
+        az role assignment create --assignee-object-id "$UAMI_PRIN"           --assignee-principal-type ServicePrincipal           --role "AcrPull" --scope "$SUB" >/dev/null || true
 
     - name: Create/Refresh ACI runner (ephemeral)
       run: |
         az container show -g "$RESOURCE_GROUP" -n "$ACI_NAME" >/dev/null 2>&1 &&           az container delete -g "$RESOURCE_GROUP" -n "$ACI_NAME" --yes -o none
-        az container create -g "$RESOURCE_GROUP" -n "$ACI_NAME"           --image "$ACR_LOGIN_SERVER/$IMAGE_NAME:latest"           --registry-login-server "$ACR_LOGIN_SERVER"           --assign-identity "$UAMI_ID"           --cpu 2 --memory 4           --restart-policy Never           --os-type Linux           --command-line "/bin/bash"           -l "$LOCATION" -o none --registry-login-server "$ACR_LOGIN_SERVER"
+        az container create -g "$RESOURCE_GROUP" -n "$ACI_NAME"           --image "$ACR_LOGIN_SERVER/$IMAGE_NAME:latest"            --assign-identity "$UAMI_ID"           --cpu 2 --memory 4           --restart-policy Never           --os-type Linux           --command-line "/bin/bash"           -l "$LOCATION" -o none 
 
     - name: How to connect
       run: |
@@ -367,6 +379,7 @@ jobs:
         echo "Inside ACI, run:"
         echo "  az login --identity && az account show"
         echo "  cd /work/terraform && terraform init -backend-config=backend.hcl && terraform plan"
+
 ```
 
 ---
