@@ -74,18 +74,16 @@ jobs:
       run: |
         UAMI_NAME="uami-tf-runner"
         az identity show -g "$RESOURCE_GROUP" -n "$UAMI_NAME" >/dev/null 2>&1 ||           az identity create -g "$RESOURCE_GROUP" -n "$UAMI_NAME" -l "$LOCATION" -o none
-    
         echo "UAMI_ID=$(az identity show -g $RESOURCE_GROUP -n $UAMI_NAME --query id -o tsv)" >> $GITHUB_ENV
-        echo $UAMI_ID
         echo "UAMI_PRIN=$(az identity show -g $RESOURCE_GROUP -n $UAMI_NAME --query principalId -o tsv)" >> $GITHUB_ENV
-        echo $UAMI_PRIN
+        echo "SUB=/subscriptions/$SUBSCRIPTION_ID" >> $GITHUB_ENV
+         echo "SCOPE_ACR=/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.ContainerRegistry/registries/$ACR_NAME"  >> $GITHUB_ENV
+       
 
     - name: Grant roles to UAMI (Contributor, AcrPull
       run: |
-        echo "SUB=/subscriptions/$SUBSCRIPTION_ID" >> $GITHUB_ENV
-        az role assignment create --assignee-object-id "$UAMI_PRIN"  --assignee-principal-type ServicePrincipal           --role "Contributor" --scope "$SUB" >/dev/null || true
-        echo "SCOPE_ACR=/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.ContainerRegistry/registries/$ACR_NAME"  >> $GITHUB_ENV
-        az role assignment create --assignee-object-id "$UAMI_PRIN"  --assignee-principal-type ServicePrincipal  --role "AcrPull" --scope "$SCOPE_ACR" >/dev/null || true
+         az role assignment create --assignee-object-id "$UAMI_PRIN"  --assignee-principal-type ServicePrincipal           --role "Contributor" --scope "$SUB" >/dev/null || true
+         az role assignment create --assignee-object-id "$UAMI_PRIN"  --assignee-principal-type ServicePrincipal  --role "AcrPull" --scope "$SCOPE_ACR" >/dev/null || true
         
     - name: Create/Refresh ACI runner (ephemeral)
       run: |
