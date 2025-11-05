@@ -46,7 +46,7 @@ jobs:
         echo "ACR_NAME=$(get ACR-NAME)"                     >> $GITHUB_ENV
         echo "IMAGE_NAME=$(get IMAGE-NAME)"                 >> $GITHUB_ENV
         echo "ACI_NAME=$(get ACI-NAME)"                     >> $GITHUB_ENV
-
+ 
     # 3) Select subscription (now that we know it)
     - name: Select subscription
       run: az account set --subscription "$SUBSCRIPTION_ID"
