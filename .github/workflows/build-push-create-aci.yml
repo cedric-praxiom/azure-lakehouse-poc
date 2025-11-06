@@ -66,10 +66,15 @@ jobs:
     - name: Build & push
       run: |
         az acr login --name "$ACR_NAME"
-        docker buildx create --use
-        docker buildx build --platform linux/amd64           -t "$ACR_LOGIN_SERVER/$IMAGE_NAME:latest"           -t "$ACR_LOGIN_SERVER/$IMAGE_NAME:${{ github.sha }}"           ./docker --push
+        docker build \
+          -t "$ACR_LOGIN_SERVER/$IMAGE_NAME:latest" \
+          -t "$ACR_LOGIN_SERVER/$IMAGE_NAME:${{ github.sha }}" \
+          -f ./docker/Dockerfile ./docker
 
-    # 6) Ensure UAMI + ACI runner
+          docker push "$ACR_LOGIN_SERVER/$IMAGE_NAME:latest"
+          docker push "$ACR_LOGIN_SERVER/$IMAGE_NAME:${{ github.sha }}"
+
+      # 6) Ensure UAMI + ACI runner
     - name: Ensure UAMI
       run: |
         UAMI_NAME="uami-tf-runner"
