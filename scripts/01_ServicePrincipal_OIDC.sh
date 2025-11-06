@@ -48,10 +48,6 @@ az role assignment create --assignee-object-id "$SP_OBJECT_ID" --assignee-princi
 az role assignment create --assignee-object-id "$SP_OBJECT_ID" --assignee-principal-type ServicePrincipal   --role "Key Vault Secrets User" --scope "$SCOPE_KV" >/dev/null || true
 az role assignment create --assignee-object-id "$SP_OBJECT_ID" --assignee-principal-type ServicePrincipal   --role "AcrPull" --scope "$SCOPE_KV" >/dev/null || true
 
-echo "SP ID : $SP_OBJECT_ID"
-echo "TENANT_ID=$TENANT_ID"
-echo "APP_ID (Client ID) = $APP_ID"
-
 echo "Set GitHub repo variables:"
 echo "AZURE_TENANT_ID=$TENANT_ID"
 echo  "AZURE_OIDC_CLIENT_ID=$APP_ID"
