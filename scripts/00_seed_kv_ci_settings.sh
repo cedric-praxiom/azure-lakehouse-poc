@@ -15,7 +15,6 @@ az group create -n "$PLATFORM_RG" -l "$LOCATION" -o none
 
 # Create KV (RBAC mode). For CI hosted runners, you can leave public access ON initially.
 az keyvault create -n "$KV_NAME" -g "$PLATFORM_RG" -l "$LOCATION" --enable-rbac-authorization true -o none
-az keyvault update -n "$KV_NAME" --enable-rbac-authorization true
 
 # --- Seed CI settings in KV ---
 az keyvault secret set --vault-name "$KV_NAME" --name "SUBSCRIPTION-ID" --value "$SUBSCRIPTION_ID" >/dev/null

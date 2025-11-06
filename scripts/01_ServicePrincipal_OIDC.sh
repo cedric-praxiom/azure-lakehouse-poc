@@ -1,4 +1,8 @@
+
+
 set -a
+source vars.env
+az account set --subscription "$SUBSCRIPTION_ID"
 export SUBSCRIPTION_ID="$(az keyvault secret show --vault-name "$KV_NAME" -n "SUBSCRIPTION-ID"  --query value -o tsv)"
 export TENANT_ID="$(az account show --query tenantId -o tsv)"
 export GITHUB_OWNER="$(az keyvault secret show --vault-name "$KV_NAME" -n "GITHUB-OWNER" --query value -o tsv)"         
@@ -48,4 +52,7 @@ echo "SP ID : $SP_OBJECT_ID"
 echo "TENANT_ID=$TENANT_ID"
 echo "APP_ID (Client ID) = $APP_ID"
 
-echo "Set GitHub repo variables: AZURE_TENANT_ID=$TENANT_ID, AZURE_OIDC_CLIENT_ID=$APP_ID, KV_URI=$KV_URI"
+echo "Set GitHub repo variables:"
+echo "AZURE_TENANT_ID=$TENANT_ID"
+echo  "AZURE_OIDC_CLIENT_ID=$APP_ID"
+echo "KV_URI=$KV_URI"
